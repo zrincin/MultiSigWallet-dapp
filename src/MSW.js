@@ -1,6 +1,6 @@
 import web3 from "./web3";
 
-const MSW_ADDR = "0x63d756Eb7C37AD221EcA0d05b3e819DE5b04335b";
+const MSW_ADDR = "0x4CdFE3d0D4147E43cAdA78eD3fF3900dA49cEC26";
 
 const MSW_ABI = [
 	{
@@ -153,6 +153,19 @@ const MSW_ABI = [
 				"internalType": "uint256",
 				"name": "contractBalance",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getOwners",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
 			}
 		],
 		"stateMutability": "view",
