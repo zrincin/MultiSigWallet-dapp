@@ -61,12 +61,18 @@ contract MultiSigWallet {
         return address(this).balance;
     }
 
+    function getOwners() public view returns (address[] memory) {
+        return owners;
+    }
+
     function createTransferRequest(uint256 _amount, address payable _to)
         external
         onlyOwner
     {
         require(getBalance() >= _amount, "Amount exceeds the contract balance");
+
         emit TransferRequestCreation(nextID, _amount, msg.sender, _to);
+
         transfers[nextID] = TransferRequest(nextID, _amount, _to, 0, false);
         nextID++;
     }
