@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import web3 from './web3';
 import MSW from './MSW';
+import {Button} from 'semantic-ui-react';
+import 'semantic-ui-css/semantic.min.css';
 
 var array = ["0x39e0359F659581CF326b8D324745DA64695C0ef3", "0x06E954198e10F8A86bBB7101e43f46D3998Cedbf", "0x79Fc51e9f9634119528755463942c6E42B618660"]
 
@@ -9,6 +11,7 @@ function App() {
   const [balance, setBalance] = useState(undefined);
   const [currentTransfer, setCurrentTransfer] = useState(undefined);
   const [limit, setlimit] = useState(undefined);
+  const [loadingBtn, setLoadingBtn] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -35,20 +38,29 @@ function App() {
 
   async function createTransfer(e) {
     e.preventDefault();
+    setLoadingBtn(true);
+    if(e.target.elements[0].value === "" || e.target.elements[1] === "") {
+      alert("Error: empty field(s). Please enter required information!");
+      window.location.reload();
+    }
+    
     const amount = e.target.elements[0].value;
     const to = e.target.elements[1].value;
     await MSW.methods
       .createTransferRequest(amount, to)
       .send({from: accounts[0]});
     await updateCurrentTransfer();
+    setLoadingBtn(false);
   };
 
   async function sendTransfer() {
+    setLoadingBtn(true);
     await MSW.methods
       .approveTransferRequest(currentTransfer.ID)
       .send({from: accounts[0]});
     await updateBalance();
     await updateCurrentTransfer();
+    setLoadingBtn(false);
   };
 
   async function updateCurrentTransfer() {
@@ -93,7 +105,7 @@ function App() {
                 <label htmlFor="to"><b>To:</b></label>
                 <input type="text" className="form-control" id="to" placeholder="Enter address of beneficiary"/>
               </div>
-              <button type="submit" className="btn btn-primary">Submit</button>
+              <Button tertiary loading={loadingBtn}>Create</Button>
             </form>
             <br/>
             Owners: {!Object.values(web3.eth.getAccounts()).map(acc => <li>{acc}</li>) || array.map(a => <li>{a}</li>) }
@@ -110,18 +122,14 @@ function App() {
               <li>Approvals: {currentTransfer.approvals} / {limit}</li>
             </ul>
             {currentTransfer.alreadyApproved && currentTransfer.approvals === limit ? 'Already approved' : (
-              <button 
-                type="submit" 
-                className="btn btn-primary"
-                onClick={sendTransfer}
-              >Submit</button>
+            <Button primary loading={loadingBtn} onClick={sendTransfer}>Approve</Button>
             )}
           </div>
         </div>
       )}
-       <footer>
-         <br/> <br/> <br/> <br/> <br/>
-         <div style={{textAlign: "center", backgroundColor: "#ECF0F1"}}>&copy; ZrinCin, 2021.</div>
+      <br/> <br/> <br/> <br/> <br/>
+       <footer style={{backgroundColor: "#ECF0F1", position: "fixed", width: "100%", left: 0, bottom: 0}}>
+         <div style={{textAlign: "center"}}>&copy; ZrinCin, 2021.</div>
       </footer>
     </div>
   );
