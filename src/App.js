@@ -4,13 +4,14 @@ import MSW from './MSW';
 import {Button} from 'semantic-ui-react';
 import 'semantic-ui-css/semantic.min.css';
 
-var array = ["0x39e0359F659581CF326b8D324745DA64695C0ef3", "0x06E954198e10F8A86bBB7101e43f46D3998Cedbf", "0x79Fc51e9f9634119528755463942c6E42B618660"]
+// var array = ["0x39e0359F659581CF326b8D324745DA64695C0ef3", "0x06E954198e10F8A86bBB7101e43f46D3998Cedbf", "0x79Fc51e9f9634119528755463942c6E42B618660"]
 
 function App() {
   const [accounts, setAccounts] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
   const [currentTransfer, setCurrentTransfer] = useState(undefined);
   const [limit, setlimit] = useState(undefined);
+  const [owners, setOwners] = useState(undefined);
   const [loadingBtn, setLoadingBtn] = useState(false);
 
   useEffect(() => {
@@ -19,8 +20,10 @@ function App() {
       const limit = await MSW.methods
         .limit()
         .call();
+      const owners = await MSW.methods.getOwners().call();
 
       setAccounts(accounts);
+      setOwners(owners);
       setlimit(limit);
       updateBalance();
       
@@ -108,7 +111,8 @@ function App() {
               <Button tertiary loading={loadingBtn}>Create</Button>
             </form>
             <br/>
-            Owners: {!Object.values(web3.eth.getAccounts()).map(acc => <li>{acc}</li>) || array.map(a => <li>{a}</li>) }
+            Owners: {owners && owners.map((owner) => <li>{owner}</li>)} 
+              
           </div>
         </div>
       ) : (
