@@ -1,4 +1,5 @@
 # MultiSigWallet-dapp
 
-# https://multisigwallet-zrincin.vercel.app/
-deployed to Rinkeby Testnet
+https://multisigwallet-zrincin.vercel.app/
+
+deployed to "Rinkeby" Ethereum testnet
