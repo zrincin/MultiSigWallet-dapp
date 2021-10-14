@@ -4,14 +4,15 @@ import MSW from "./MSW";
 import { Button } from "semantic-ui-react";
 import "semantic-ui-css/semantic.min.css";
 
-function App() {
+const App = () => {
   const [accounts, setAccounts] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
   const [currentTransfer, setCurrentTransfer] = useState(undefined);
   const [limit, setlimit] = useState(undefined);
   const [owners, setOwners] = useState(undefined);
   const [loadingBtn, setLoadingBtn] = useState(false);
-  const [message, setMessage] = useState(undefined);
+  const [message, setMessage] = useState("");
+  const [message2, setMessage2] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -30,15 +31,15 @@ function App() {
     });
   }, []);
 
-  async function updateBalance() {
+  const updateBalance = async () => {
     const balance = await web3.eth.getBalance(MSW.options.address);
     setBalance(balance);
-  }
+  };
 
-  async function createTransfer(e) {
+  const createTransfer = async (e) => {
     e.preventDefault();
     setLoadingBtn(true);
-    setMessage("Creating transfer, please wait...");
+    setMessage("Creating new transfer request, please wait...");
 
     if (e.target.elements[0].value === "" || e.target.elements[1] === "") {
       alert("Error: empty field(s). Please enter required information!");
@@ -50,21 +51,28 @@ function App() {
     await MSW.methods
       .createTransferRequest(amount, to)
       .send({ from: accounts[0] });
-    await updateCurrentTransfer();
-    setMessage("Transfer successfully created!");
-  }
+    setLoadingBtn(false);
+    setMessage(`Transfer request successfully created!`);
+    setTimeout(() => {
+      updateCurrentTransfer();
+    }, 3000);
+  };
 
-  async function sendTransfer() {
+  const sendTransfer = async () => {
     setLoadingBtn(true);
+    setMessage2("Approving transfer request, please wait...");
     await MSW.methods
       .approveTransferRequest(currentTransfer.ID)
       .send({ from: accounts[0] });
+    setLoadingBtn(false);
+    setMessage2(
+      `Transfer request approved ${currentTransfer.approvals} times!`
+    );
     await updateBalance();
     await updateCurrentTransfer();
-    setLoadingBtn(false);
-  }
+  };
 
-  async function updateCurrentTransfer() {
+  const updateCurrentTransfer = async () => {
     const currentTransferId = (await MSW.methods.nextID().call()) - 1;
     if (currentTransferId >= 0) {
       const currentTransfer = await MSW.methods
@@ -75,7 +83,7 @@ function App() {
         .call();
       setCurrentTransfer({ ...currentTransfer, alreadyApproved });
     }
-  }
+  };
 
   if (!web3) {
     return <div>Loading...</div>;
@@ -103,7 +111,7 @@ function App() {
       {!currentTransfer || currentTransfer.approvals === limit ? (
         <div className="row">
           <div className="col-sm-12">
-            <h2>Create transfer</h2>
+            <h2>Create transfer request</h2>
             <form onSubmit={(e) => createTransfer(e)}>
               <div className="form-group">
                 <label htmlFor="amount">
@@ -140,7 +148,7 @@ function App() {
       ) : (
         <div className="row">
           <div className="col-sm-12">
-            <h2>Approve transfer</h2>
+            <h2>Approve transfer request</h2>
             <ul>
               <li>TransferID: {currentTransfer.ID}</li>
               <li>Amount: {currentTransfer.amount} wei</li>
@@ -157,6 +165,7 @@ function App() {
                 Approve
               </Button>
             )}
+            <h2>{message2}</h2>
           </div>
         </div>
       )}
@@ -174,6 +183,6 @@ function App() {
       </footer>
     </div>
   );
-}
+};
 
 export default App;
