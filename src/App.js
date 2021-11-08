@@ -135,12 +135,16 @@ const App = () => {
                   placeholder="Enter address of beneficiary"
                 />
               </div>
-              <Button tertiary loading={loadingBtn}>
+              <Button tertiary="true" loading={loadingBtn}>
                 Create
               </Button>
             </form>
             <br />
-            Owners: {owners && owners.map((owner) => <li>{owner}</li>)}
+            Owners:{" "}
+            {owners &&
+              owners.map((owner, index) => {
+                return <li key={index}>{owner}</li>;
+              })}
             <br />
             <h2>{message}</h2>
           </div>
