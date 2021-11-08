@@ -140,7 +140,7 @@ const App = () => {
               </Button>
             </form>
             <br />
-            Owners:{" "}
+            Owners:
             {owners &&
               owners.map((owner, index) => {
                 return <li key={index}>{owner}</li>;
