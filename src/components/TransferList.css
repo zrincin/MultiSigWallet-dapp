@@ -1,0 +1,12 @@
+.approve-btn:hover {
+  background-color: limegreen;
+}
+
+.hide-btn {
+  visibility: hidden;
+}
+
+.sent {
+  font-weight: bold;
+  color: limegreen;
+}
