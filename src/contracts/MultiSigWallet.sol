@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 contract MultiSigWallet {
     address[] public owners;
     uint256 public limit;
-    uint256 public nextID;
 
     struct TransferRequest {
         uint256 ID;
@@ -15,8 +14,10 @@ contract MultiSigWallet {
         bool isSent;
     }
 
+    // mapping(uint256 => TransferRequest) public transfers;
+    TransferRequest[] public transfers;
+
     mapping(address => uint256) public balances;
-    mapping(uint256 => TransferRequest) public transfers;
     mapping(address => mapping(uint256 => bool)) public isApproved;
 
     event TransferRequestCreation(
@@ -61,8 +62,12 @@ contract MultiSigWallet {
         return address(this).balance;
     }
 
-    function getOwners() public view returns (address[] memory) {
+    function getOwners() external view returns (address[] memory) {
         return owners;
+    }
+
+    function getTransfers() external view returns (TransferRequest[] memory) {
+        return transfers;
     }
 
     function createTransferRequest(uint256 _amount, address payable _to)
@@ -71,18 +76,17 @@ contract MultiSigWallet {
     {
         require(getBalance() >= _amount, "Amount exceeds the contract balance");
 
-        emit TransferRequestCreation(nextID, _amount, msg.sender, _to);
+        emit TransferRequestCreation(transfers.length, _amount, msg.sender, _to);
 
-        transfers[nextID] = TransferRequest(nextID, _amount, _to, 0, false);
-        nextID++;
+        transfers.push(TransferRequest(transfers.length, _amount, _to, 0, false));
     }
 
-    function approveTransferRequest(uint256 _ID) external payable onlyOwner {
+    function approveTransferRequest(uint256 _ID) external onlyOwner {
         require(
             transfers[_ID].isSent == false,
             "Transfer has already been sent"
         );
-        require(isApproved[msg.sender][_ID] == false);
+        require(isApproved[msg.sender][_ID] == false, "Already approved");
 
         isApproved[msg.sender][_ID] = true;
         transfers[_ID].approvals++;
