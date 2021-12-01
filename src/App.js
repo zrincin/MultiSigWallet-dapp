@@ -3,27 +3,34 @@ import web3 from "./web3";
 import MSW from "./MSW";
 import { Button } from "semantic-ui-react";
 import "semantic-ui-css/semantic.min.css";
+import TransferList from "./components/TransferList";
 
 const App = () => {
-  const [accounts, setAccounts] = useState(undefined);
-  const [balance, setBalance] = useState(undefined);
-  const [currentTransfer, setCurrentTransfer] = useState(undefined);
-  const [limit, setlimit] = useState(undefined);
-  const [owners, setOwners] = useState(undefined);
+  const [accounts, setAccounts] = useState();
+  const [balance, setBalance] = useState();
+  const [currentTransfer, setCurrentTransfer] = useState();
+  const [limit, setlimit] = useState();
+  const [owners, setOwners] = useState([]);
   const [loadingBtn, setLoadingBtn] = useState(false);
   const [message, setMessage] = useState("");
-  const [message2, setMessage2] = useState("");
+  const [transfers, setTransfers] = useState([]);
+  const [value, setValue] = useState("");
+  const [showTransfers, setShowTransfers] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       const accounts = await web3.eth.getAccounts();
+      const balance = await web3.eth.getBalance(MSW.options.address);
       const limit = await MSW.methods.limit().call();
       const owners = await MSW.methods.getOwners().call();
+      const transfers = await MSW.methods.getTransfers().call();
 
       setAccounts(accounts);
+      setBalance(balance);
       setOwners(owners);
       setlimit(limit);
-      updateBalance();
+      setTransfers(transfers);
+      setMessage("");
     };
     init();
     window.ethereum.on("accountsChanged", (accounts) => {
@@ -45,35 +52,42 @@ const App = () => {
       alert("Error: empty field(s). Please enter required information!");
       window.location.reload();
     }
-
-    const amount = e.target.elements[0].value;
-    const to = e.target.elements[1].value;
-    await MSW.methods
-      .createTransferRequest(amount, to)
-      .send({ from: accounts[0] });
+    try {
+      const to = e.target.elements[1].value;
+      await MSW.methods
+        .createTransferRequest(web3.utils.toWei(value, "ether"), to)
+        .send({ from: accounts[0] });
+      setMessage("Transfer request successfully created!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setMessage("Transaction canceled!");
+      setTimeout(() => setMessage(""), 3000);
+    }
     setLoadingBtn(false);
-    setMessage(`Transfer request successfully created!`);
-    setTimeout(() => {
-      updateCurrentTransfer();
-    }, 3000);
+    await updateCurrentTransfer();
   };
 
-  const sendTransfer = async () => {
+  const approveTransfer = async (currentTransferId) => {
     setLoadingBtn(true);
-    setMessage2("Approving transfer request, please wait...");
-    await MSW.methods
-      .approveTransferRequest(currentTransfer.ID)
-      .send({ from: accounts[0] });
+    setMessage("Approving transfer request, please wait...");
+    try {
+      await MSW.methods
+        .approveTransferRequest(currentTransferId)
+        .send({ from: accounts[0] });
+      setMessage("Transfer approved!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setMessage("Transaction canceled!");
+      setTimeout(() => setMessage(""), 3000);
+    }
     setLoadingBtn(false);
-    setMessage2(
-      `Transfer request approved ${currentTransfer.approvals} times!`
-    );
     await updateBalance();
     await updateCurrentTransfer();
   };
 
   const updateCurrentTransfer = async () => {
-    const currentTransferId = (await MSW.methods.nextID().call()) - 1;
+    let currentTransferId = await MSW.methods.getTransfers().call();
+    currentTransferId = currentTransferId.length - 1;
     if (currentTransferId >= 0) {
       const currentTransfer = await MSW.methods
         .transfers(currentTransferId)
@@ -85,8 +99,8 @@ const App = () => {
     }
   };
 
-  if (!web3) {
-    return <div>Loading...</div>;
+  if (!web3 || typeof accounts === "undefined" || owners.length === 0) {
+    return <h1>Loading...</h1>;
   }
 
   return (
@@ -101,27 +115,34 @@ const App = () => {
       <div className="row">
         <div className="col-sm-12">
           <p>
-            Contract address: <b>0x4CdFE3d0D4147E43cAdA78eD3fF3900dA49cEC26</b>
+            Contract address: <b>{MSW.options.address}</b>
             <br />
-            Contract balance: <b>{balance} wei</b>
+            Contract balance:{" "}
+            <b>
+              {balance} wei &nbsp;&nbsp;(
+              {web3.utils.fromWei(balance, "ether")} ETH)
+            </b>
             <br /> <br />
           </p>
         </div>
       </div>
       {!currentTransfer || currentTransfer.approvals === limit ? (
+        // CREATE TRANSFER
         <div className="row">
           <div className="col-sm-12">
             <h2>Create transfer request</h2>
-            <form onSubmit={(e) => createTransfer(e)}>
+            <form onSubmit={createTransfer}>
               <div className="form-group">
                 <label htmlFor="amount">
-                  <b>Amount:</b>
+                  <b>Amount [ETH]:</b>
                 </label>
                 <input
                   type="number"
                   className="form-control"
                   id="amount"
-                  placeholder="Enter amount in wei"
+                  placeholder="Enter amount in ether"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
                 />
               </div>
               <div className="form-group">
@@ -140,36 +161,57 @@ const App = () => {
               </Button>
             </form>
             <br />
-            Owners:
+            <h4>Owners:</h4>
             {owners &&
               owners.map((owner, index) => {
                 return <li key={index}>{owner}</li>;
               })}
             <br />
             <h2>{message}</h2>
+            <br />
+            <button
+              onClick={() => setShowTransfers(!showTransfers)}
+              style={{ marginBottom: 20 }}
+            >
+              {showTransfers ? "Hide transfer list" : "Show transfer list"}
+            </button>
+            {showTransfers ? (
+              <TransferList
+                transfers={transfers}
+                approveTransfer={approveTransfer}
+              />
+            ) : null}
           </div>
         </div>
       ) : (
+        //APPROVE TRANSFER
         <div className="row">
           <div className="col-sm-12">
             <h2>Approve transfer request</h2>
             <ul>
               <li>TransferID: {currentTransfer.ID}</li>
-              <li>Amount: {currentTransfer.amount} wei</li>
+              <li>
+                Amount: {currentTransfer.amount} wei &nbsp;&nbsp;(
+                {web3.utils.fromWei(currentTransfer.amount, "ether")} ETH)
+              </li>
               <li>Beneficiary: {currentTransfer.to}</li>
               <li>
                 Approvals: {currentTransfer.approvals} / {limit}
               </li>
             </ul>
-            {currentTransfer.alreadyApproved &&
-            currentTransfer.approvals === limit ? (
-              "Already approved"
-            ) : (
-              <Button primary loading={loadingBtn} onClick={sendTransfer}>
+            {!currentTransfer.alreadyApproved ? (
+              <Button
+                type="submit"
+                primary
+                loading={loadingBtn}
+                onClick={() => approveTransfer(currentTransfer.ID)}
+              >
                 Approve
               </Button>
+            ) : (
+              <h4>Already approved by this account/address!</h4>
             )}
-            <h2>{message2}</h2>
+            <h2>{message}</h2>
           </div>
         </div>
       )}
