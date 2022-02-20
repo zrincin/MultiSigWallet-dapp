@@ -225,7 +225,10 @@ const App = () => {
           bottom: 0,
         }}
       >
-        <div style={{ textAlign: "center" }}>&copy; ZrinCin, 2021.</div>
+        <div style={{ textAlign: "center" }}>
+          &copy; ZrinCin, {new Date().getFullYear()}
+          {"."}
+        </div>
       </footer>
     </div>
   );
