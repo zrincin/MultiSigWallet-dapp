@@ -100,7 +100,15 @@ const App = () => {
   };
 
   if (!web3 || typeof accounts === "undefined" || owners.length === 0) {
-    return <h1>Loading...</h1>;
+    return (
+      <>
+        <h1>Loading...</h1>
+        <h3>
+          {" "}
+          (If no content - switch network to Rinkeby and reload the page)
+        </h3>
+      </>
+    );
   }
 
   return (
