@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
+import TransferList from "./components/TransferList";
+import Footer from "./components/Footer";
 import web3 from "./web3";
 import MSW from "./MSW";
-import { Button } from "semantic-ui-react";
+import { Container, Form, Input, Button } from "semantic-ui-react";
 import "semantic-ui-css/semantic.min.css";
-import TransferList from "./components/TransferList";
+import "animate.css";
+import { shortenAddress } from "./utils/addressShortener";
 
 const App = () => {
-  const [accounts, setAccounts] = useState();
-  const [balance, setBalance] = useState();
+  const [accounts, setAccounts] = useState(null);
+  const [balance, setBalance] = useState("");
   const [currentTransfer, setCurrentTransfer] = useState();
   const [limit, setlimit] = useState();
   const [owners, setOwners] = useState([]);
@@ -30,12 +33,12 @@ const App = () => {
       setOwners(owners);
       setlimit(limit);
       setTransfers(transfers);
-      setMessage("");
     };
     init();
     window.ethereum.on("accountsChanged", (accounts) => {
       setAccounts(accounts);
     });
+    window.ethereum.on("chainChanged", (_) => window.location.reload());
   }, []);
 
   const updateBalance = async () => {
@@ -99,75 +102,100 @@ const App = () => {
     }
   };
 
-  if (!web3 || typeof accounts === "undefined" || owners.length === 0) {
+  if (!web3 || accounts == null || owners.length === 0) {
     return (
       <>
         <h1>Loading...</h1>
-        <h3>
-          {" "}
-          (If no content - switch network to Rinkeby and reload the page)
-        </h3>
+        <h3> (If no content - switch network to Rinkeby)</h3>
       </>
     );
   }
 
   return (
-    <div className="container" style={{ overflow: "auto" }}>
-      <h1 className="text-center" style={{ marginTop: 20 }}>
-        Multi Signature Wallet
-      </h1>
-      <h3 className="text-center" style={{ marginTop: -10 }}>
-        (required signatures: {limit})
-      </h3>
-      <br />
-      <div className="row">
-        <div className="col-sm-12">
+    <div
+      style={{ overflow: "auto", animationDuration: "2s" }}
+      className="animate__fadeInDown"
+    >
+      <Container>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            marginTop: 10,
+          }}
+        >
+          <h1>Multi Signature Wallet</h1>
+          <h3 style={{ marginTop: -10 }}>(required signatures: {limit})</h3>
+        </div>
+        {accounts && accounts.length ? (
+          <div style={{ float: "right" }}>
+            <b>Connected to:</b> &nbsp;
+            <span style={{ color: "#3336FF", fontWeight: "bolder" }}>
+              {accounts && shortenAddress(accounts[0])}
+            </span>
+          </div>
+        ) : (
+          <Button
+            circular
+            color="vk"
+            size="small"
+            floated="right"
+            onClick={async () => {
+              await window.ethereum.request({
+                method: "eth_requestAccounts",
+              });
+            }}
+          >
+            Connect Wallet
+          </Button>
+        )}
+        <br /> <br />
+        <>
           <p>
-            Contract address: <b>{MSW.options.address}</b>
+            Contract address: <b>{MSW.options.address} &nbsp; (Rinkeby)</b>
             <br />
             Contract balance:{" "}
             <b>
               {balance} wei &nbsp;&nbsp;(
               {web3.utils.fromWei(balance, "ether")} ETH)
             </b>
-            <br /> <br />
           </p>
-        </div>
-      </div>
-      {!currentTransfer || currentTransfer.approvals === limit ? (
-        // CREATE TRANSFER
-        <div className="row">
-          <div className="col-sm-12">
+        </>
+        {!currentTransfer || currentTransfer.approvals === limit ? (
+          // CREATE TRANSFER
+          <>
             <h2>Create transfer request</h2>
-            <form onSubmit={createTransfer}>
-              <div className="form-group">
+
+            <Form onSubmit={createTransfer}>
+              <Form.Field>
                 <label htmlFor="amount">
                   <b>Amount [ETH]:</b>
                 </label>
-                <input
+                <Input
                   type="number"
-                  className="form-control"
                   id="amount"
                   placeholder="Enter amount in ether"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                 />
-              </div>
-              <div className="form-group">
+              </Form.Field>
+              <Form.Field>
                 <label htmlFor="to">
                   <b>To:</b>
                 </label>
-                <input
+                <Input
                   type="text"
-                  className="form-control"
                   id="to"
                   placeholder="Enter address of beneficiary"
                 />
-              </div>
-              <Button tertiary="true" loading={loadingBtn}>
+              </Form.Field>
+              <Button primary loading={loadingBtn}>
                 Create
               </Button>
-            </form>
+            </Form>
+
             <br />
             <h4>Owners:</h4>
             {owners &&
@@ -176,25 +204,27 @@ const App = () => {
               })}
             <br />
             <h2>{message}</h2>
-            <br />
-            <button
+
+            <Button
+              color="olive"
+              size="tiny"
+              compact
               onClick={() => setShowTransfers(!showTransfers)}
               style={{ marginBottom: 20 }}
             >
               {showTransfers ? "Hide transfer list" : "Show transfer list"}
-            </button>
+            </Button>
+
             {showTransfers ? (
               <TransferList
                 transfers={transfers}
                 approveTransfer={approveTransfer}
               />
             ) : null}
-          </div>
-        </div>
-      ) : (
-        //APPROVE TRANSFER
-        <div className="row">
-          <div className="col-sm-12">
+          </>
+        ) : (
+          //APPROVE TRANSFER
+          <>
             <h2>Approve transfer request</h2>
             <ul>
               <li>TransferID: {currentTransfer.ID}</li>
@@ -220,24 +250,10 @@ const App = () => {
               <h4>Already approved by this account/address!</h4>
             )}
             <h2>{message}</h2>
-          </div>
-        </div>
-      )}
-      <br /> <br /> <br /> <br /> <br />
-      <footer
-        style={{
-          backgroundColor: "#ECF0F1",
-          position: "fixed",
-          width: "100%",
-          left: 0,
-          bottom: 0,
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          &copy; ZrinCin, {new Date().getFullYear()}
-          {"."}
-        </div>
-      </footer>
+          </>
+        )}
+      </Container>
+      <Footer />
     </div>
   );
 };
