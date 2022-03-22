@@ -4,7 +4,6 @@ let web3;
 
 // Modern DAPP browsers
 if (window.ethereum) {
-  window.ethereum.request({ method: "eth_requestAccounts" }); // instead of "window.ethereum.enable()" - deprecated
   web3 = new Web3(window.ethereum);
 }
 
