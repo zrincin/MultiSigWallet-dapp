@@ -2,7 +2,7 @@ import React from "react";
 import web3 from "../web3";
 import "./TransferList.css";
 
-const TransferList = ({ transfers, approveTransfer }) => {
+const TransferList = ({ transfers, approveTransfer, loadingBtn }) => {
   return (
     <div style={{ marginBottom: 50 }}>
       <h4>Transfers:</h4>
@@ -34,7 +34,10 @@ const TransferList = ({ transfers, approveTransfer }) => {
               <button
                 className={`${!transfer.isSent ? "approve-btn" : "hide-btn"}`}
                 style={{ marginLeft: 20 }}
-                onClick={() => approveTransfer(transfer.ID)}
+                onClick={() => {
+                  approveTransfer(transfer.ID);
+                  loadingBtn(false);
+                }}
               >
                 Approve
               </button>
