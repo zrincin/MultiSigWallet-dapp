@@ -11,13 +11,13 @@ import { shortenAddress } from "./utils/addressShortener";
 const App = () => {
   const [accounts, setAccounts] = useState(null);
   const [balance, setBalance] = useState("");
-  const [currentTransfer, setCurrentTransfer] = useState();
-  const [limit, setlimit] = useState();
+  const [currentTransfer, setCurrentTransfer] = useState(null);
+  const [limit, setlimit] = useState("");
   const [owners, setOwners] = useState([]);
   const [loadingBtn, setLoadingBtn] = useState(false);
   const [message, setMessage] = useState("");
   const [transfers, setTransfers] = useState([]);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState({ amount: "", to: "" });
   const [showTransfers, setShowTransfers] = useState(false);
 
   useEffect(() => {
@@ -51,46 +51,57 @@ const App = () => {
     setLoadingBtn(true);
     setMessage("Creating new transfer request, please wait...");
 
-    if (e.target.elements[0].value === "" || e.target.elements[1] === "") {
+    const inputValidation =
+      e.target.elements[0].value === "" || e.target.elements[1].value === "";
+
+    if (inputValidation) {
       alert("Error: empty field(s). Please enter required information!");
-      window.location.reload();
     }
+
     try {
+      const amount = e.target.elements[0].value;
       const to = e.target.elements[1].value;
       await MSW.methods
-        .createTransferRequest(web3.utils.toWei(value, "ether"), to)
+        .createTransferRequest(web3.utils.toWei(amount, "ether"), to)
         .send({ from: accounts[0] });
       setMessage("Transfer request successfully created!");
       setTimeout(() => setMessage(""), 3000);
+      await updateCurrentTransfer();
     } catch (err) {
-      setMessage("Transaction canceled!");
+      console.error(err);
+      setMessage(inputValidation ? "" : "Transaction canceled!");
+      setValue({ amount: "", to: "" });
       setTimeout(() => setMessage(""), 3000);
+
+      setLoadingBtn(false);
     }
-    setLoadingBtn(false);
-    await updateCurrentTransfer();
   };
 
   const approveTransfer = async (currentTransferId) => {
     setLoadingBtn(true);
     setMessage("Approving transfer request, please wait...");
+
     try {
       await MSW.methods
         .approveTransferRequest(currentTransferId)
         .send({ from: accounts[0] });
       setMessage("Transfer approved!");
       setTimeout(() => setMessage(""), 3000);
+      await updateCurrentTransfer();
+      await updateBalance();
     } catch (err) {
+      console.error(err);
       setMessage("Transaction canceled!");
       setTimeout(() => setMessage(""), 3000);
     }
+
     setLoadingBtn(false);
-    await updateBalance();
-    await updateCurrentTransfer();
   };
 
   const updateCurrentTransfer = async () => {
     let currentTransferId = await MSW.methods.getTransfers().call();
     currentTransferId = currentTransferId.length - 1;
+
     if (currentTransferId >= 0) {
       const currentTransfer = await MSW.methods
         .transfers(currentTransferId)
@@ -164,7 +175,9 @@ const App = () => {
           </p>
         </>
         {!currentTransfer || currentTransfer.approvals === limit ? (
-          // CREATE TRANSFER
+          /*
+              CREATE TRANSFER
+          */
           <>
             <h2>Create transfer request</h2>
 
@@ -174,10 +187,10 @@ const App = () => {
                   <b>Amount [ETH]:</b>
                 </label>
                 <Input
-                  type="number"
+                  type="text"
                   id="amount"
                   placeholder="Enter amount in ether"
-                  value={value}
+                  value={value.amount}
                   onChange={(e) => setValue(e.target.value)}
                 />
               </Form.Field>
@@ -189,6 +202,8 @@ const App = () => {
                   type="text"
                   id="to"
                   placeholder="Enter address of beneficiary"
+                  value={value.to}
+                  onChange={(e) => setValue(e.target.value)}
                 />
               </Form.Field>
               <Button primary loading={loadingBtn}>
@@ -219,11 +234,14 @@ const App = () => {
               <TransferList
                 transfers={transfers}
                 approveTransfer={approveTransfer}
+                loadingBtn={setLoadingBtn}
               />
             ) : null}
           </>
         ) : (
-          //APPROVE TRANSFER
+          /*
+              APPROVE TRANSFER
+          */
           <>
             <h2>Approve transfer request</h2>
             <ul>
