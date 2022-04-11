@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
+import ConnectWallet from "./components/ConnectWallet";
 import TransferList from "./components/TransferList";
+import CreateTransaction from "./components/CreateTransaction";
+import ApproveTransaction from "./components/ApproveTransaction";
 import Footer from "./components/Footer";
 import web3 from "./web3";
 import MSW from "./MSW";
-import { Container, Form, Input, Button } from "semantic-ui-react";
+import { Container, Button } from "semantic-ui-react";
 import "semantic-ui-css/semantic.min.css";
 import "animate.css";
 import { shortenAddress } from "./utils/addressShortener";
@@ -140,29 +143,8 @@ const App = () => {
           <h1>Multi Signature Wallet</h1>
           <h3 style={{ marginTop: -10 }}>(required signatures: {limit})</h3>
         </div>
-        {accounts && accounts.length ? (
-          <div style={{ float: "right" }}>
-            <b>Connected to:</b> &nbsp;
-            <span style={{ color: "#3336FF", fontWeight: "bolder" }}>
-              {accounts && shortenAddress(accounts[0])}
-            </span>
-          </div>
-        ) : (
-          <Button
-            circular
-            color="vk"
-            size="small"
-            floated="right"
-            onClick={async () => {
-              await window.ethereum.request({
-                method: "eth_requestAccounts",
-              });
-            }}
-          >
-            Connect Wallet
-          </Button>
-        )}
-        <br /> <br />
+
+        <ConnectWallet accounts={accounts} shortenAddress={shortenAddress} />
         <>
           <p>
             Contract address: <b>{MSW.options.address} &nbsp; (Rinkeby)</b>
@@ -174,6 +156,7 @@ const App = () => {
             </b>
           </p>
         </>
+
         {!currentTransfer || currentTransfer.approvals === limit ? (
           /*
               CREATE TRANSFER
@@ -181,35 +164,12 @@ const App = () => {
           <>
             <h2>Create transfer request</h2>
 
-            <Form onSubmit={createTransfer}>
-              <Form.Field>
-                <label htmlFor="amount">
-                  <b>Amount [ETH]:</b>
-                </label>
-                <Input
-                  type="text"
-                  id="amount"
-                  placeholder="Enter amount in ether"
-                  value={value.amount}
-                  onChange={(e) => setValue(e.target.value)}
-                />
-              </Form.Field>
-              <Form.Field>
-                <label htmlFor="to">
-                  <b>To:</b>
-                </label>
-                <Input
-                  type="text"
-                  id="to"
-                  placeholder="Enter address of beneficiary"
-                  value={value.to}
-                  onChange={(e) => setValue(e.target.value)}
-                />
-              </Form.Field>
-              <Button primary loading={loadingBtn}>
-                Create
-              </Button>
-            </Form>
+            <CreateTransaction
+              createTransfer={createTransfer}
+              value={value}
+              setValue={setValue}
+              loadingBtn={loadingBtn}
+            />
 
             <br />
             <h4>Owners:</h4>
@@ -243,30 +203,12 @@ const App = () => {
               APPROVE TRANSFER
           */
           <>
-            <h2>Approve transfer request</h2>
-            <ul>
-              <li>TransferID: {currentTransfer.ID}</li>
-              <li>
-                Amount: {currentTransfer.amount} wei &nbsp;&nbsp;(
-                {web3.utils.fromWei(currentTransfer.amount, "ether")} ETH)
-              </li>
-              <li>Beneficiary: {currentTransfer.to}</li>
-              <li>
-                Approvals: {currentTransfer.approvals} / {limit}
-              </li>
-            </ul>
-            {!currentTransfer.alreadyApproved ? (
-              <Button
-                type="submit"
-                primary
-                loading={loadingBtn}
-                onClick={() => approveTransfer(currentTransfer.ID)}
-              >
-                Approve
-              </Button>
-            ) : (
-              <h4>Already approved by this account/address!</h4>
-            )}
+            <ApproveTransaction
+              limit={limit}
+              loadingBtn={loadingBtn}
+              currentTransfer={currentTransfer}
+              approveTransfer={approveTransfer}
+            />
             <h2>{message}</h2>
           </>
         )}
