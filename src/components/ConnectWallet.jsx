@@ -1,7 +1,10 @@
-import React from "react";
 import { Button } from "semantic-ui-react";
+import Link from "next/link";
 
 const ConnectWallet = ({ accounts, shortenAddress }) => {
+  const hasEthereum =
+    typeof window !== "undefined" && typeof window.ethereum !== "undefined";
+
   return (
     <>
       {accounts && accounts.length ? (
@@ -27,12 +30,20 @@ const ConnectWallet = ({ accounts, shortenAddress }) => {
           size="small"
           floated="right"
           onClick={async () => {
-            await window.ethereum.request({
+            await window.ethereum?.request({
               method: "eth_requestAccounts",
             });
           }}
         >
-          Connect Wallet
+          {hasEthereum ? (
+            "Connect Wallet"
+          ) : (
+            <Link href="https://metamask.io">
+              <a style={{ color: "white" }} target="_blank">
+                Install Metamask
+              </a>
+            </Link>
+          )}
         </Button>
       )}
       <br /> <br />

@@ -1,4 +1,3 @@
-import React from "react";
 import web3 from "../web3";
 import { Button } from "semantic-ui-react";
 

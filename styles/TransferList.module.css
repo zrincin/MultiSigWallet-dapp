@@ -1,9 +1,5 @@
-.approve-btn:hover {
+.approveBtn:hover {
   background-color: limegreen;
-}
-
-.hide-btn {
-  visibility: hidden;
 }
 
 .sent {

@@ -1,20 +1,18 @@
 import Web3 from "web3";
+const api = require("./secrets.json");
 
 let web3;
 
-// Modern DAPP browsers
-if (window.ethereum) {
+if (typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
+  // We are in the browser and Metamask is running
+  window.ethereum.request({ method: "eth_requestAccounts" });
   web3 = new Web3(window.ethereum);
-}
-
-// Legacy DAPP browsers
-else if (window.web3) {
-  web3 = new Web3(window.web3.currentProvider);
 } else {
-  window.alert(`
-    Metamask not detected. 
-    You need to install it in order to be able to use the DAPP! 
-    (https://metamask.io/index.html)`);
+  // We are on the server OR the user is not running Metamask
+  const provider = new Web3.providers.HttpProvider(
+    `https://speedy-nodes-nyc.moralis.io/${api.API_KEY}/eth/rinkeby`
+  );
+  web3 = new Web3(provider);
 }
 
 export default web3;
